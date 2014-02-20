@@ -621,10 +621,11 @@ function renderIframe($iframe, html) {
 	html = '<meta http-equiv="Content-Security-Policy" content="default-src \'none\'; img-src *; style-src \'self\' \'unsafe-inline\'; font-src *;" />'+html;
 	$iframe.attr('srcdoc', util.sanitizeHtml(html));
 	function sizeIframe() {
-		// this.height = '20px';
 		this.height = null; // reset so we can get a fresh measurement
-		// console.log(this.contentWindow.document.body.scrollHeight);
-		this.height = (this.contentWindow.document.body.offsetHeight) + 'px';
+		var oh = this.contentWindow.document.body.offsetHeight;
+		var sh = this.contentWindow.document.body.scrollHeight;
+		console.log(oh, sh);
+		this.height = ((sh == 150) ? oh : (sh+20)) + 'px';
 	}
 	$iframe.load(sizeIframe);
 
