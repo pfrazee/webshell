@@ -1,0 +1,13 @@
+html, body { height: 100%; }
+iframe[seamless] { background-color: transparent; border: 0 none transparent; padding: 0; width: 100%; }
+.container-full { margin: 0 auto; width: 100%; padding: 5px;}
+
+#cmd-in { border-bottom-left-radius: 0; border-bottom-right-radius: 0 }
+
+.cli-update { width: 100%; margin-top: 2px; }
+.cli-update > tbody > tr > td { vertical-align: top; padding: 5px 10px; }
+.cli-update > tbody > tr > td:first-child { border: 1px solid #eee; border-right: 1px solid #C3C1C4; position: relative; max-width: 50px }
+.cli-update > tbody > tr > td:first-child .update-panel { position: absolute; top: 0; left: 0; width: 100%; padding: 6px 6px 3px; background: white; display: none; }
+.cli-update > tbody > tr > td:first-child:hover .update-panel { display: block; }
+.cli-update > tbody > tr > td:first-child .update-panel a:hover { text-decoration: none; }
+.cli-update > tbody > tr > td:first-child .update-panel .glyphicon:before { color: #B9BFC4; }
