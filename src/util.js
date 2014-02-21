@@ -27,6 +27,10 @@ function reqToCmd(req) {
 	if (urld.protocol == 'httpl') url = url.slice('httpl://'.length); // remove httpl:// if its the scheme
 	cmd += url;
 
+	if (req.query && Object.keys(req.query).length) {
+		cmd += '?'+local.contentTypes.serialize('application/x-www-form-urlencoded', req.query);
+	}
+
 	// Is the accept header expressable in the fat pipe?
 	var isAcceptFatpipeable = (req.headers.accept && req.headers.accept.indexOf(',') === -1);
 	for (var k in req.headers) {
