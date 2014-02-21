@@ -614,7 +614,7 @@ function renderResponse(res) {
 		if (typeof res.body == 'string') {
 			return res.body;
 		} else {
-			return '<pre><code>'+util.makeSafe(JSON.stringify(res.body))+'</code></pre>';
+			return '<link href="css/prism.css" rel="stylesheet"><pre><code class="language-javascript">'+util.makeSafe(JSON.stringify(res.body))+'</code></pre>';
 		}
 	}
 	return res.status + ' ' + res.reason;
@@ -662,6 +662,12 @@ function renderIframe($iframe, html) {
 		try {
 			local.bindRequestEvents($iframe.contents()[0].body);
 			$iframe.contents()[0].body.addEventListener('request', iframeRequestEventHandler);
+
+			var els = $iframe.contents()[0].body.querySelectorAll('.language-javascript');
+			for (var i=0; i < els.length; i++) {
+				Prism.highlightElement(els[i]);
+			}
+
 			clearInterval(bindPoller);
 		} catch(e) {
 			attempts++;
