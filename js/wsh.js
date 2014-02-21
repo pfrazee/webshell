@@ -669,10 +669,19 @@ function renderIframe($iframe, html) {
 	$iframe.attr('srcdoc', util.sanitizeHtml(html));
 	function sizeIframe() {
 		this.height = null; // reset so we can get a fresh measurement
+
 		var oh = this.contentWindow.document.body.offsetHeight;
 		var sh = this.contentWindow.document.body.scrollHeight;
 		// for whatever reason, chrome gives a minimum of 150 for scrollHeight, but is accurate if below that. Whatever.
-		this.height = ((sh == 150) ? oh : (sh+20)) + 'px';
+		this.height = ((sh == 150) ? oh : sh) + 'px';
+
+		// In 100ms, do it again - it seems styles aren't always in place
+		var self = this;
+		setTimeout(function() {
+			var oh = self.contentWindow.document.body.offsetHeight;
+			var sh = self.contentWindow.document.body.scrollHeight;
+			self.height = ((sh == 150) ? oh : sh) + 'px';
+		}, 100);
 	}
 	$iframe.load(sizeIframe);
 
