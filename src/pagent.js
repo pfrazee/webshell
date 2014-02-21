@@ -19,20 +19,24 @@ function createIframe(origin, cmd) {
 		'<table class="cli-update">',
 			'<tr>',
 				'<td>',
-					'<small class="text-muted">'+time+'</small>',
-					'<div class="update-panel">',
-						// '<a class="glyphicon glyphicon-remove" method="DELETE" href="/'+id+'" title="Delete History Item" target="_null"></a>',
-						(origin?('<small>'+origin+'</small>'):''),
-					'</div>',
+					'<p><small class="text-muted">'+time+'</small></p>',
+					// (origin?('<p>'+origin+'</p>'):''),
 				'</td>',
 				'<td>',
-					((cmd) ? ('<em class="text-muted">'+util.makeSafe(cmd)+'</em>') : ''),
+					((cmd) ? ([
+						'<p><form action="httpl://cli" method="POST">',
+							'<input type="hidden" name="cmd">',
+							'<button type="submit" class="btn btn-default btn-xs">&crarr;</button>',
+							' <em class="text-muted">'+util.makeSafe(cmd)+'</em>',
+						'</form></p>'
+					].join('')) : ''),
 					'<iframe seamless="seamless" sandbox="allow-popups allow-same-origin allow-scripts" data-origin="'+origin+'"><html><body></body></html></iframe>',
 				'</td>',
 			'</tr>',
 		'</table>'
 	].join('');
 	$('#cmd-out').prepend(html);
+	$('#cmd-out .cli-update').first().find('input[name=cmd]').val(util.makeSafe(cmd));
 	return $('#cmd-out iframe').first();
 }
 

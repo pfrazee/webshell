@@ -6,6 +6,11 @@ function makeSafe(str) {
 	return str.replace(lbracket_regex, '&lt;').replace(rbracket_regex, '&gt;');
 }
 
+var quoteRegex = /"/g;
+function escapeQuotes(str) {
+	return (''+str).replace(quoteRegex, '&quot;');
+}
+
 var sanitizeHtmlRegexp = /<\s*script/g;
 function sanitizeHtml (html) {
 	// CSP stops inline or remote script execution, but we still want to stop inclusions of scripts on our domain
@@ -55,6 +60,7 @@ function escapeQuotes(str) {
 
 module.exports = {
 	makeSafe: makeSafe,
+	escapeQuotes: escapeQuotes,
 	sanitizeHtml: sanitizeHtml,
 	reqToCmd: reqToCmd
 };

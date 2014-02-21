@@ -4,10 +4,11 @@ iframe[seamless] { background-color: transparent; border: 0 none transparent; pa
 
 #cmd-in { border-bottom-left-radius: 0; border-bottom-right-radius: 0 }
 
-.cli-update { width: 100%; margin-top: 2px; }
+.cli-update { width: 100%; margin: 5px 0; opacity: 0.25; }
+.cli-update:first-child, .cli-update:hover { opacity: 1; }
 .cli-update > tbody > tr > td { vertical-align: top; padding: 5px 10px; }
-.cli-update > tbody > tr > td:first-child { border: 1px solid #eee; border-right: 1px solid #C3C1C4; position: relative; max-width: 50px }
-.cli-update > tbody > tr > td:first-child .update-panel { position: absolute; top: 0; left: 0; width: 100%; padding: 6px 6px 3px; background: white; display: none; }
-.cli-update > tbody > tr > td:first-child:hover .update-panel { display: block; }
-.cli-update > tbody > tr > td:first-child .update-panel a:hover { text-decoration: none; }
-.cli-update > tbody > tr > td:first-child .update-panel .glyphicon:before { color: #B9BFC4; }
+.cli-update > tbody > tr > td:first-child { border: 1px solid #eee; border-right: 0; position: relative; width: 150px }
+.cli-update > tbody > tr > td:nth-child(2) { border: 1px solid #C3C1C4; }
+
+.cmd-example { display: inline-block; padding: 5px 8px; margin: 0 5px; border: 1px solid #ccc; border-radius: 4px; }
+.cmd-example:hover { border-color: #66afe9; box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px rgba(102, 175, 233, 0.6); text-decoration: none; }
