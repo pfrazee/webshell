@@ -28,4 +28,4 @@ local.addServer('worker-bridge', require('./worker-bridge.js'));
 local.addServer('cli', require('./cli'));
 local.addServer('help', require('./help.js'));
 
-pagent.dispatchRequest({ url: 'httpl://help/about' });
+pagent.dispatchRequest({ url: 'httpl://help' });
