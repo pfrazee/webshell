@@ -808,20 +808,26 @@ function reqToCmd(req) {
 	if (urld.protocol == 'httpl') url = url.slice('httpl://'.length); // remove httpl:// if its the scheme
 	cmd += url;
 
+	// Is the accept header expressable in the fat pipe?
+	var isAcceptFatpipeable = (req.headers.accept && req.headers.accept.indexOf(',') === -1);
 	for (var k in req.headers) {
-		if (k == 'accept' || k == 'host') continue;
-		cmd += ' -'+k+'='+req.headers[k];
+		if ((isAcceptFatpipeable && k == 'accept') || k == 'host') continue;
+		cmd += ' -'+k+'="'+escapeQuotes(req.headers[k])+'"';
 	}
 
 	if (req.body) {
 		cmd += ' --'+((typeof req.body == 'object') ? JSON.stringify(req.body) : req.body);
 	}
 
-	if (req.headers.accept) {
+	if (isAcceptFatpipeable) {
 		cmd += ' ['+req.headers.accept+']';
 	}
 
 	return cmd;
+}
+
+function escapeQuotes(str) {
+	return str.replace(/"/g, '\\"');
 }
 
 module.exports = {
