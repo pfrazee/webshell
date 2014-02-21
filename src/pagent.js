@@ -89,7 +89,7 @@ function iframeRequestEventHandler(e) {
 }
 
 function prepIframeRequest(req, iframeEl) {
-	var current_content_origin = 'httpl://' + ((iframeEl) ? iframeEl.id.slice('iframe-'.length) : 'main'); // :DEBUG: pull from iframe or default to main
+	var current_content_origin = iframeEl.dataset.origin;
 	if (current_content_origin) {
 		// Put origin into the headers
 		req.headers.from = current_content_origin;
@@ -130,7 +130,7 @@ function dispatchRequest(req, origin) {
 				origin = res.header('CLI-Origin');
 			}
 
-			var newIframe = createIframe(origin, res.header('CLI-Cmd'));
+			var newIframe = createIframe(origin, res.header('CLI-Cmd') || util.reqToCmd(req));
 			renderIframe(newIframe, renderResponse(res));
 			return res;
 		});

@@ -716,7 +716,7 @@ function iframeRequestEventHandler(e) {
 }
 
 function prepIframeRequest(req, iframeEl) {
-	var current_content_origin = 'httpl://' + ((iframeEl) ? iframeEl.id.slice('iframe-'.length) : 'main'); // :DEBUG: pull from iframe or default to main
+	var current_content_origin = iframeEl.dataset.origin;
 	if (current_content_origin) {
 		// Put origin into the headers
 		req.headers.from = current_content_origin;
@@ -757,7 +757,7 @@ function dispatchRequest(req, origin) {
 				origin = res.header('CLI-Origin');
 			}
 
-			var newIframe = createIframe(origin, res.header('CLI-Cmd'));
+			var newIframe = createIframe(origin, res.header('CLI-Cmd') || util.reqToCmd(req));
 			renderIframe(newIframe, renderResponse(res));
 			return res;
 		});
@@ -794,9 +794,40 @@ function sanitizeHtml (html) {
 	return html.replace(sanitizeHtmlRegexp, '&lt;script');
 }
 
+function reqToCmd(req) {
+	if (typeof req == 'string') { req = { url: req }; }
+	if (!req || typeof req != 'object') return '';
+
+	var cmd = '';
+	if (req.method && req.method.toLowerCase() != 'get') {
+		cmd += req.method.toUpperCase() + ' ';
+	}
+
+	var url = req.url;
+	var urld = req.urld || local.parseUri(req);
+	if (urld.protocol == 'httpl') url = url.slice('httpl://'.length); // remove httpl:// if its the scheme
+	cmd += url;
+
+	for (var k in req.headers) {
+		if (k == 'accept' || k == 'host') continue;
+		cmd += ' -'+k+'='+req.headers[k];
+	}
+
+	if (req.body) {
+		cmd += ' --'+((typeof req.body == 'object') ? JSON.stringify(req.body) : req.body);
+	}
+
+	if (req.headers.accept) {
+		cmd += ' ['+req.headers.accept+']';
+	}
+
+	return cmd;
+}
+
 module.exports = {
 	makeSafe: makeSafe,
-	sanitizeHtml: sanitizeHtml
+	sanitizeHtml: sanitizeHtml,
+	reqToCmd: reqToCmd
 };
 },{}],9:[function(require,module,exports){
 // Worker Bridge

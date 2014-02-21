@@ -13,7 +13,38 @@ function sanitizeHtml (html) {
 	return html.replace(sanitizeHtmlRegexp, '&lt;script');
 }
 
+function reqToCmd(req) {
+	if (typeof req == 'string') { req = { url: req }; }
+	if (!req || typeof req != 'object') return '';
+
+	var cmd = '';
+	if (req.method && req.method.toLowerCase() != 'get') {
+		cmd += req.method.toUpperCase() + ' ';
+	}
+
+	var url = req.url;
+	var urld = req.urld || local.parseUri(req);
+	if (urld.protocol == 'httpl') url = url.slice('httpl://'.length); // remove httpl:// if its the scheme
+	cmd += url;
+
+	for (var k in req.headers) {
+		if (k == 'accept' || k == 'host') continue;
+		cmd += ' -'+k+'='+req.headers[k];
+	}
+
+	if (req.body) {
+		cmd += ' --'+((typeof req.body == 'object') ? JSON.stringify(req.body) : req.body);
+	}
+
+	if (req.headers.accept) {
+		cmd += ' ['+req.headers.accept+']';
+	}
+
+	return cmd;
+}
+
 module.exports = {
 	makeSafe: makeSafe,
-	sanitizeHtml: sanitizeHtml
+	sanitizeHtml: sanitizeHtml,
+	reqToCmd: reqToCmd
 };
