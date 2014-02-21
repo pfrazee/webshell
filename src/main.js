@@ -26,5 +26,6 @@ local.addServer('worker-bridge', require('./worker-bridge.js'));
 
 // Servers
 local.addServer('cli', require('./cli'));
+local.addServer('help', require('./help.js'));
 
-pagent.dispatchRequest({ url: 'httpl://hosts' });
+pagent.dispatchRequest({ url: 'httpl://help' });

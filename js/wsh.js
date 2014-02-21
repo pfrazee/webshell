@@ -263,7 +263,7 @@ function forbidOthers(req, res) {
 		throw 403;
 	return true;
 }
-},{"../util":7,"./executor":1,"./history":2,"./parser":4}],4:[function(require,module,exports){
+},{"../util":8,"./executor":1,"./history":2,"./parser":4}],4:[function(require,module,exports){
 // CLI command parser
 // ==================
 /*
@@ -547,6 +547,32 @@ function replaceEscapeCodes(str) {
 	});
 }
 },{}],5:[function(require,module,exports){
+
+
+var server = servware();
+module.exports = server;
+
+server.route('/', function (link, method) {
+	method('GET', function (req, res) {
+		req.assert({ accept: 'text/html' });
+
+		return [200, [
+		'<html><body style="max-width: 560px"><strong>WebSHell 0.1.0</strong>',
+			'WebSHell is an open-source project created by <a href="https://twitter.com/pfrazee" target="_blank">Paul Frazee</a> to interact with Web services. It is a command line for HTTP requests, to compose streams of information and to construct interfaces. Responses are shown directly in iframes.',
+			'<div class="well" style="margin: 0">Type <a href="httpl://help">help&crarr;</a> to learn the syntax.\nType <a href="httpl://hosts">hosts&crarr;</a> for a list of local hosts.</div>',
+			'Multi-threaded "Worker" VMs are used to sandbox Web services on the user\'s computer.',
+			'The Worker services use global URLs that extend the HTTP/S namespace. When a request is sent to them, they are downloaded and executed to generate the response. They are closed immediately after the response is received; or after a time-out; or after bad behavior.',
+			'Workers can also be persisted through an INSTALL request:\n<code>INSTALL workers?url=https://user.github.io/repo/worker.js</code>',
+			'<a href="https://github.com/pfraze/wsh" target="_blank">Fork or clone WebShell</a> and host with <a href="http://pages.github.com/" target="_blank">GitHub Pages</a>. You can execute setup requests in <code>./src/main.js</code>. Use <code>make setup</code> to build.',
+			'Uses <a href="https://grimwire.com/local" target="_blank">HTTP Local</a>, <a href="https://github.com/pfraze/servware" target="_blank">Servware</a>, and <a href="http://getbootstrap.com/" target="_blank">Bootstrap 3</a>.',
+		'</body></html>'
+		].join('\n\n'), {'Content-Type': 'text/html'}];
+	});
+});
+
+/*
+*/
+},{}],6:[function(require,module,exports){
 // Environment Setup
 // =================
 var pagent = require('./pagent.js');
@@ -575,9 +601,10 @@ local.addServer('worker-bridge', require('./worker-bridge.js'));
 
 // Servers
 local.addServer('cli', require('./cli'));
+local.addServer('help', require('./help.js'));
 
-pagent.dispatchRequest({ url: 'httpl://hosts' });
-},{"./cli":3,"./pagent.js":6,"./worker-bridge.js":8,"./worker-loader.js":9}],6:[function(require,module,exports){
+pagent.dispatchRequest({ url: 'httpl://help' });
+},{"./cli":3,"./help.js":5,"./pagent.js":7,"./worker-bridge.js":9,"./worker-loader.js":10}],7:[function(require,module,exports){
 // Page Agent (PAgent)
 // ===================
 var util = require('./util.js');
@@ -587,7 +614,7 @@ function renderResponse(res) {
 		if (typeof res.body == 'string') {
 			return res.body;
 		} else {
-			return util.makeSafe(JSON.stringify(res.body));
+			return '<pre><code>'+util.makeSafe(JSON.stringify(res.body))+'</code></pre>';
 		}
 	}
 	return res.status + ' ' + res.reason;
@@ -624,7 +651,7 @@ function renderIframe($iframe, html) {
 		this.height = null; // reset so we can get a fresh measurement
 		var oh = this.contentWindow.document.body.offsetHeight;
 		var sh = this.contentWindow.document.body.scrollHeight;
-		console.log(oh, sh);
+		// for whatever reason, chrome gives a minimum of 150 for scrollHeight, but is accurate if below that. Whatever.
 		this.height = ((sh == 150) ? oh : (sh+20)) + 'px';
 	}
 	$iframe.load(sizeIframe);
@@ -716,7 +743,7 @@ module.exports = {
 	prepIframeRequest: prepIframeRequest,
 	dispatchRequest: dispatchRequest
 };
-},{"./util.js":7}],7:[function(require,module,exports){
+},{"./util.js":8}],8:[function(require,module,exports){
 
 var lbracket_regex = /</g;
 var rbracket_regex = />/g;
@@ -736,7 +763,7 @@ module.exports = {
 	makeSafe: makeSafe,
 	sanitizeHtml: sanitizeHtml
 };
-},{}],8:[function(require,module,exports){
+},{}],9:[function(require,module,exports){
 // Worker Bridge
 // =============
 // handles requests from the worker
@@ -803,7 +830,7 @@ function proxy(req, res, worker) {
 	req.on('data', function(chunk) { req2.write(chunk); });
 	req.on('end', function() { req2.end(); });
 }
-},{}],9:[function(require,module,exports){
+},{}],10:[function(require,module,exports){
 // Constants
 // =========
 // Worker wrapper code
@@ -896,5 +923,5 @@ module.exports = {
 	lookupWorker: lookupWorker,
 	startWorker: startWorker
 };
-},{}]},{},[5])
+},{}]},{},[6])
 ;

@@ -7,7 +7,7 @@ function renderResponse(res) {
 		if (typeof res.body == 'string') {
 			return res.body;
 		} else {
-			return util.makeSafe(JSON.stringify(res.body));
+			return '<pre><code>'+util.makeSafe(JSON.stringify(res.body))+'</code></pre>';
 		}
 	}
 	return res.status + ' ' + res.reason;
