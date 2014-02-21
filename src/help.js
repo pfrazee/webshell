@@ -19,6 +19,10 @@ server.route('/about', function(link, method) {
 		req.assert({ accept: 'text/html' });
 		return [200, [
 		'<html>',
+			'<style>',
+				'a img { position: relative; top: -2px }',
+				'.bootstrap-color { color: #563d7c }',
+			'</style>',
 			'<body style="max-width: 560px">',
 				'<h4>WebShell 0.1.0</h4>',
 				'<p>WebShell is an open-source project created by <a href="https://twitter.com/pfrazee" target="_blank">Paul Frazee</a> to interact with Web services. It is a command line for HTTP requests, to compose streams of information and to construct interfaces. Responses are shown directly in iframes.</p>',
@@ -26,7 +30,11 @@ server.route('/about', function(link, method) {
 				'<p class="text-muted"><a class="cmd-example" href="httpl://help">help&crarr;</a> learn how to use WebShell</p>',
 				'<p class="text-muted"><a class="cmd-example" href="httpl://help/workers">help/workers&crarr;</a> introduction to worker services</p>',
 				'<p><a href="https://github.com/pfraze/webshell" target="_blank">Fork or clone WebShell</a> and host with <a href="http://pages.github.com/" target="_blank">GitHub Pages</a>. You can execute setup requests in ./src/main.js. Use <code>make setup</code> to build.</p>',
-				'<p>Uses <a href="https://grimwire.com/local" target="_blank">HTTP Local</a>, <a href="https://github.com/pfraze/servware" target="_blank">Servware</a>, and <a href="http://getbootstrap.com/" target="_blank">Bootstrap 3</a>.</p>',
+				'<p>Uses ',
+					'<a href="https://grimwire.com/local" target="_blank"><img src="img/httplocal_20x20.png"><strong style="color:#333">HTTP<span class="text-danger">Local</span></strong></a>,',
+					' <a href="https://github.com/pfraze/servware" target="_blank"><img src="img/servware_20x20.png"><strong class="text-success">Servware</strong></a>',
+					' and <a href="http://getbootstrap.com/" target="_blank"><img src="img/bootstrap_20x20.png"><strong class="bootstrap-color">Bootstrap 3</strong></a>',
+				'</p>',
 			'</body>',
 		'</html>'
 		].join(''), {'Content-Type': 'text/html'}];
