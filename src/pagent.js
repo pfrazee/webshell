@@ -33,8 +33,8 @@ function createIframe(origin, cmd) {
 						'<p><form action="httpl://cli" method="POST">',
 							'<input type="hidden" name="cmd">',
 							'<button type="submit" class="btn btn-default btn-xs">&crarr;</button>',
-							' <em class="text-muted">'+util.makeSafe(cmd)+'</em>',
 							' <button type="submit" class="btn btn-default btn-xs" formtarget="cli-update-iframe-'+iframeCounter+'"><small class="glyphicon glyphicon-refresh"></small></button>',
+							' <em class="text-muted">'+util.makeSafe(cmd)+'</em>',
 							' <a class="btn btn-default btn-xs" method="DELETE" href="httpl://cli/'+iframeCounter+'" target="_null">&times;</a>',
 						'</form></p>'
 					].join('')) : ''),
@@ -114,7 +114,7 @@ function dispatchRequest(req, origin, opts) {
 	var target = req.target; // local.Request() will strip `target`
 	var body = req.body; delete req.body;
 
-	if (!target) target = '_self';
+	if (!target) target = '_parent';
 	if (!req.headers && target != '_null') { req.headers = {}; }
 	if (req.headers && !req.headers.accept) { req.headers.accept = 'text/html, */*'; }
 	req = (req instanceof local.Request) ? req : (new local.Request(req));
