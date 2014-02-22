@@ -34,7 +34,7 @@ function createIframe(origin, cmd) {
 							'<input type="hidden" name="cmd">',
 							'<button type="submit" class="btn btn-default btn-xs">&crarr;</button>',
 							' <button type="submit" class="btn btn-default btn-xs" formtarget="cli-update-iframe-'+iframeCounter+'"><small class="glyphicon glyphicon-refresh"></small></button>',
-							' <em class="text-muted">'+util.makeSafe(cmd)+'</em>',
+							' <code class="text-muted">'+util.makeSafe(cmd)+'</code>',
 							' <a class="btn btn-default btn-xs" method="DELETE" href="httpl://cli/'+iframeCounter+'" target="_null">&times;</a>',
 						'</form></p>'
 					].join('')) : ''),
