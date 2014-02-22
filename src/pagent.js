@@ -34,10 +34,11 @@ function createIframe(origin, cmd) {
 							'<input type="hidden" name="cmd">',
 							'<button type="submit" class="btn btn-default btn-xs">&crarr;</button>',
 							' <em class="text-muted">'+util.makeSafe(cmd)+'</em>',
+							' <button type="submit" class="btn btn-default btn-xs" formtarget="cli-update-iframe-'+iframeCounter+'"><small class="glyphicon glyphicon-refresh"></small></button>',
 							' <a class="btn btn-default btn-xs" method="DELETE" href="httpl://cli/'+iframeCounter+'" target="_null">&times;</a>',
 						'</form></p>'
 					].join('')) : ''),
-					'<iframe seamless="seamless" sandbox="allow-popups allow-same-origin allow-scripts" data-origin="'+origin+'"><html><body></body></html></iframe>',
+					'<iframe id="cli-update-iframe-'+iframeCounter+'" seamless="seamless" sandbox="allow-popups allow-same-origin allow-scripts" data-origin="'+origin+'"><html><body></body></html></iframe>',
 				'</td>',
 			'</tr>',
 		'</table>'
@@ -108,8 +109,8 @@ function prepIframeRequest(req, iframeEl) {
 	}
 }
 
-function dispatchRequest(req, origin) {
-	var originIsIframe = origin instanceof HTMLIFrameElement;
+function dispatchRequest(req, origin, opts) {
+	opts = opts || {};
 	var target = req.target; // local.Request() will strip `target`
 	var body = req.body; delete req.body;
 
@@ -124,13 +125,35 @@ function dispatchRequest(req, origin) {
 		req.url = local.joinUri(baseurl, req.url);
 	}
 
+	// Select the iframe using the target if not from within an iframe
+	if (target && target.charAt(0) != '_' && !opts.$iframe) {
+		opts.$iframe = $('iframe#'+target);
+		target = '_self';
+	}
+
 	// Handle request based on target and origin
 	var res_;
-	if (target == '_self' && originIsIframe) {
+	if (target == '_self' && opts.$iframe) {
 		// In-place update
 		res_ = local.dispatch(req);
 		res_.always(function(res) {
-			renderIframe(origin, renderResponse(res));
+			var cmd;
+			var from = (req.urld.protocol != 'data') ? (req.urld.protocol || 'httpl')+'://'+req.urld.authority : null;
+			if (from == 'httpl://cli' && res.header('CLI-Origin')) {
+				// Proxied through the command-line
+				cmd = res.header('CLI-Cmd');
+				from = res.header('CLI-Origin'); // use the downstream origin
+			} else {
+				// Not proxied through the CLI
+				cmd = util.reqToCmd(req); // generate the command equivalent
+			}
+
+			var historyIndex = opts.$iframe.attr('id').slice('cli-update-iframe-'.length);
+			if (historyIndex) {
+				cliHistory.set(historyIndex, from, cmd, res); // replace in history
+			}
+
+			renderIframe(opts.$iframe, renderResponse(res));
 			return res;
 		});
 	} else if (target == '_self' || target == '_parent') {
@@ -147,7 +170,7 @@ function dispatchRequest(req, origin) {
 				// Not proxied through the CLI
 				cmd = util.reqToCmd(req); // generate the command equivalent
 			}
-			cliHistory.add(origin, cmd); // add to history
+			cliHistory.add(origin, cmd, res); // add to history
 
 			var newIframe = createIframe(origin, cmd, res);
 			renderIframe(newIframe, renderResponse(res));

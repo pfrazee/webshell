@@ -23,6 +23,48 @@ $('#cmd-in').on('keyup', function(e) {
 	}
 });
 
+function execute(req, res) {
+	// Validate inputs
+	var cmd, cmdParsed, update;
+	req.assert({ type: ['application/json', 'application/x-www-form-urlencoded', 'text/plain'] });
+	if (typeof req.body == 'string') { cmd = req.body; }
+	else if (req.body.cmd) { cmd = req.body.cmd; }
+	else { throw [422, 'Must pass a text/plain string or an object with a `cmd` string attribute.']; }
+
+	// Parse
+	try {
+		cmdParsed = cliParser.parse(cmd);
+	} catch (e) {
+		// Parsing error
+		return [400, e.toString(), {'Content-Type': 'text/plain'}];
+	}
+
+	// Execute
+	var res_ = local.promise();
+	var cmdTask = cliExecutor.exec(cmdParsed);
+	var lastReq, lastRes;
+	cmdTask.on('request', function(cmd) {
+		// Set request headers
+		cmd.request.header('From', 'httpl://cli');
+	});
+	cmdTask.on('response', function(cmd) { lastReq = cmd.request; lastRes = cmd.response; });
+	cmdTask.on('done', function() {
+		// Add to history
+		// :TODO: needed?
+		var urld = local.parseUri(lastReq);
+		var origin = (urld.protocol != 'data') ? (urld.protocol || 'httpl')+'://'+urld.authority : null;
+		// cliHistory.add(origin, cmd, lastRes); :NOTE: now done in pagent
+
+		// Fulfill response
+		lastRes.headers['CLI-Cmd'] = cmd;
+		lastRes.headers['CLI-Origin'] = origin;
+		res_.fulfill(lastRes);
+	});
+	cmdTask.start();
+
+	return res_;
+}
+
 server.route('/', function(link, method) {
 	link({ href: 'httpl://hosts', rel: 'via', id: 'hosts', title: 'Page' });
 	link({ href: '/', rel: 'self service collection', id: 'cli', title: 'Command Line' });
@@ -31,45 +73,7 @@ server.route('/', function(link, method) {
 	method('HEAD', forbidOthers, function() { return 204; });
 
 	method('POST', forbidOthers, function(req, res) {
-		// Validate inputs
-		var cmd, cmdParsed, update;
-		req.assert({ type: ['application/json', 'application/x-www-form-urlencoded', 'text/plain'] });
-		if (typeof req.body == 'string') { cmd = req.body; }
-		else if (req.body.cmd) { cmd = req.body.cmd; }
-		else { throw [422, 'Must pass a text/plain string or an object with a `cmd` string attribute.']; }
-
-		// Parse
-		try {
-			cmdParsed = cliParser.parse(cmd);
-		} catch (e) {
-			// Parsing error
-			return [400, e.toString(), {'Content-Type': 'text/plain'}];
-		}
-
-		// Execute
-		var res_ = local.promise();
-		var cmdTask = cliExecutor.exec(cmdParsed);
-		var lastReq, lastRes;
-		cmdTask.on('request', function(cmd) {
-			// Set request headers
-			cmd.request.header('From', 'httpl://cli');
-		});
-		cmdTask.on('response', function(cmd) { lastReq = cmd.request; lastRes = cmd.response; });
-		cmdTask.on('done', function() {
-			// Add to history
-			// :TODO: needed?
-			var urld = local.parseUri(lastReq);
-			var origin = (urld.protocol != 'data') ? (urld.protocol || 'httpl')+'://'+urld.authority : null;
-			// cliHistory.add(origin, cmd, lastRes); :NOTE: now done in pagent
-
-			// Fulfill response
-			lastRes.headers['CLI-Cmd'] = cmd;
-			lastRes.headers['CLI-Origin'] = origin;
-			res_.fulfill(lastRes);
-		});
-		cmdTask.start();
-
-		return res_;
+		return execute(req, res);
 	});
 });
 

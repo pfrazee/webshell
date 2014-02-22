@@ -16,8 +16,14 @@ function getAll(id) {
 	return _updates;
 }
 
-function set(id, v) {
-	_updates[id] = v;
+function set(id, from, cmd, response) {
+	if (!from && !cmd && !response)
+		_updates[id] = null;
+	else {
+		_updates[id].from = from;
+		_updates[id].cmd = cmd;
+		_updates[id].response = response;
+	}
 }
 
 function setCursor(cursor) {

@@ -118,8 +118,14 @@ function getAll(id) {
 	return _updates;
 }
 
-function set(id, v) {
-	_updates[id] = v;
+function set(id, from, cmd, response) {
+	if (!from && !cmd && !response)
+		_updates[id] = null;
+	else {
+		_updates[id].from = from;
+		_updates[id].cmd = cmd;
+		_updates[id].response = response;
+	}
 }
 
 function setCursor(cursor) {
@@ -170,6 +176,48 @@ $('#cmd-in').on('keyup', function(e) {
 	}
 });
 
+function execute(req, res) {
+	// Validate inputs
+	var cmd, cmdParsed, update;
+	req.assert({ type: ['application/json', 'application/x-www-form-urlencoded', 'text/plain'] });
+	if (typeof req.body == 'string') { cmd = req.body; }
+	else if (req.body.cmd) { cmd = req.body.cmd; }
+	else { throw [422, 'Must pass a text/plain string or an object with a `cmd` string attribute.']; }
+
+	// Parse
+	try {
+		cmdParsed = cliParser.parse(cmd);
+	} catch (e) {
+		// Parsing error
+		return [400, e.toString(), {'Content-Type': 'text/plain'}];
+	}
+
+	// Execute
+	var res_ = local.promise();
+	var cmdTask = cliExecutor.exec(cmdParsed);
+	var lastReq, lastRes;
+	cmdTask.on('request', function(cmd) {
+		// Set request headers
+		cmd.request.header('From', 'httpl://cli');
+	});
+	cmdTask.on('response', function(cmd) { lastReq = cmd.request; lastRes = cmd.response; });
+	cmdTask.on('done', function() {
+		// Add to history
+		// :TODO: needed?
+		var urld = local.parseUri(lastReq);
+		var origin = (urld.protocol != 'data') ? (urld.protocol || 'httpl')+'://'+urld.authority : null;
+		// cliHistory.add(origin, cmd, lastRes); :NOTE: now done in pagent
+
+		// Fulfill response
+		lastRes.headers['CLI-Cmd'] = cmd;
+		lastRes.headers['CLI-Origin'] = origin;
+		res_.fulfill(lastRes);
+	});
+	cmdTask.start();
+
+	return res_;
+}
+
 server.route('/', function(link, method) {
 	link({ href: 'httpl://hosts', rel: 'via', id: 'hosts', title: 'Page' });
 	link({ href: '/', rel: 'self service collection', id: 'cli', title: 'Command Line' });
@@ -178,45 +226,7 @@ server.route('/', function(link, method) {
 	method('HEAD', forbidOthers, function() { return 204; });
 
 	method('POST', forbidOthers, function(req, res) {
-		// Validate inputs
-		var cmd, cmdParsed, update;
-		req.assert({ type: ['application/json', 'application/x-www-form-urlencoded', 'text/plain'] });
-		if (typeof req.body == 'string') { cmd = req.body; }
-		else if (req.body.cmd) { cmd = req.body.cmd; }
-		else { throw [422, 'Must pass a text/plain string or an object with a `cmd` string attribute.']; }
-
-		// Parse
-		try {
-			cmdParsed = cliParser.parse(cmd);
-		} catch (e) {
-			// Parsing error
-			return [400, e.toString(), {'Content-Type': 'text/plain'}];
-		}
-
-		// Execute
-		var res_ = local.promise();
-		var cmdTask = cliExecutor.exec(cmdParsed);
-		var lastReq, lastRes;
-		cmdTask.on('request', function(cmd) {
-			// Set request headers
-			cmd.request.header('From', 'httpl://cli');
-		});
-		cmdTask.on('response', function(cmd) { lastReq = cmd.request; lastRes = cmd.response; });
-		cmdTask.on('done', function() {
-			// Add to history
-			// :TODO: needed?
-			var urld = local.parseUri(lastReq);
-			var origin = (urld.protocol != 'data') ? (urld.protocol || 'httpl')+'://'+urld.authority : null;
-			// cliHistory.add(origin, cmd, lastRes); :NOTE: now done in pagent
-
-			// Fulfill response
-			lastRes.headers['CLI-Cmd'] = cmd;
-			lastRes.headers['CLI-Origin'] = origin;
-			res_.fulfill(lastRes);
-		});
-		cmdTask.start();
-
-		return res_;
+		return execute(req, res);
 	});
 });
 
@@ -814,10 +824,11 @@ function createIframe(origin, cmd) {
 							'<input type="hidden" name="cmd">',
 							'<button type="submit" class="btn btn-default btn-xs">&crarr;</button>',
 							' <em class="text-muted">'+util.makeSafe(cmd)+'</em>',
+							' <button type="submit" class="btn btn-default btn-xs" formtarget="cli-update-iframe-'+iframeCounter+'"><small class="glyphicon glyphicon-refresh"></small></button>',
 							' <a class="btn btn-default btn-xs" method="DELETE" href="httpl://cli/'+iframeCounter+'" target="_null">&times;</a>',
 						'</form></p>'
 					].join('')) : ''),
-					'<iframe seamless="seamless" sandbox="allow-popups allow-same-origin allow-scripts" data-origin="'+origin+'"><html><body></body></html></iframe>',
+					'<iframe id="cli-update-iframe-'+iframeCounter+'" seamless="seamless" sandbox="allow-popups allow-same-origin allow-scripts" data-origin="'+origin+'"><html><body></body></html></iframe>',
 				'</td>',
 			'</tr>',
 		'</table>'
@@ -888,8 +899,8 @@ function prepIframeRequest(req, iframeEl) {
 	}
 }
 
-function dispatchRequest(req, origin) {
-	var originIsIframe = origin instanceof HTMLIFrameElement;
+function dispatchRequest(req, origin, opts) {
+	opts = opts || {};
 	var target = req.target; // local.Request() will strip `target`
 	var body = req.body; delete req.body;
 
@@ -904,13 +915,35 @@ function dispatchRequest(req, origin) {
 		req.url = local.joinUri(baseurl, req.url);
 	}
 
+	// Select the iframe using the target if not from within an iframe
+	if (target && target.charAt(0) != '_' && !opts.$iframe) {
+		opts.$iframe = $('iframe#'+target);
+		target = '_self';
+	}
+
 	// Handle request based on target and origin
 	var res_;
-	if (target == '_self' && originIsIframe) {
+	if (target == '_self' && opts.$iframe) {
 		// In-place update
 		res_ = local.dispatch(req);
 		res_.always(function(res) {
-			renderIframe(origin, renderResponse(res));
+			var cmd;
+			var from = (req.urld.protocol != 'data') ? (req.urld.protocol || 'httpl')+'://'+req.urld.authority : null;
+			if (from == 'httpl://cli' && res.header('CLI-Origin')) {
+				// Proxied through the command-line
+				cmd = res.header('CLI-Cmd');
+				from = res.header('CLI-Origin'); // use the downstream origin
+			} else {
+				// Not proxied through the CLI
+				cmd = util.reqToCmd(req); // generate the command equivalent
+			}
+
+			var historyIndex = opts.$iframe.attr('id').slice('cli-update-iframe-'.length);
+			if (historyIndex) {
+				cliHistory.set(historyIndex, from, cmd, res); // replace in history
+			}
+
+			renderIframe(opts.$iframe, renderResponse(res));
 			return res;
 		});
 	} else if (target == '_self' || target == '_parent') {
@@ -927,7 +960,7 @@ function dispatchRequest(req, origin) {
 				// Not proxied through the CLI
 				cmd = util.reqToCmd(req); // generate the command equivalent
 			}
-			cliHistory.add(origin, cmd); // add to history
+			cliHistory.add(origin, cmd, res); // add to history
 
 			var newIframe = createIframe(origin, cmd, res);
 			renderIframe(newIframe, renderResponse(res));
