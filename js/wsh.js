@@ -128,10 +128,10 @@ function setCursor(cursor) {
 
 function moveCursor(delta) {
 	var new_pos = _cursor + delta;
-	if (new_pos >= 0 && new_pos < _inputs.length) {
+	if (new_pos >= 0 && new_pos < _updates.length) {
 		_cursor = new_pos;
 	}
-	return _inputs[_cursor] || '';
+	return (_updates[_cursor]) ? _updates[_cursor].cmd : '';
 }
 
 
@@ -675,7 +675,7 @@ server.route('/intro/6', function (link, method) {
 				'background-clip: text;',
 			'}</style>',
 			'<h3><span class="rainbow">AWESOME</span></h3>',
-			'<p>You must be wondering what "httpl" is. That\'s a protocol that targets Javascript functions. These instructions have all been served by a script running on this page (<a href="httpl://host.com/src/help.js">View Source</a>).</p>',
+			'<p>You must be wondering what "httpl" is. That\'s a protocol that targets Javascript functions in the page. <a href="httpl://host.com/src/help.js">View This Script</a>.</p>',
 			'<p>This is the basis of WebShell\'s power.</p>',
 			'<p class="text-muted"><a class="cmd-example" href="httpl://help/intro/7">help/intro/7</a> see the next page</p>'
 		].join(''), {'Content-Type':'text/html'}];

@@ -26,10 +26,10 @@ function setCursor(cursor) {
 
 function moveCursor(delta) {
 	var new_pos = _cursor + delta;
-	if (new_pos >= 0 && new_pos < _inputs.length) {
+	if (new_pos >= 0 && new_pos < _updates.length) {
 		_cursor = new_pos;
 	}
-	return _inputs[_cursor] || '';
+	return (_updates[_cursor]) ? _updates[_cursor].cmd : '';
 }
 
 
