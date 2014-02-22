@@ -118,6 +118,10 @@ function getAll(id) {
 	return _updates;
 }
 
+function set(id, v) {
+	_updates[id] = v;
+}
+
 function setCursor(cursor) {
 	_cursor = cursor;
 }
@@ -135,6 +139,7 @@ module.exports = {
 	add: add,
 	get: get,
 	getAll: getAll,
+	set: set,
 
 	setCursor: setCursor,
 	moveCursor: moveCursor
@@ -202,7 +207,7 @@ server.route('/', function(link, method) {
 			// :TODO: needed?
 			var urld = local.parseUri(lastReq);
 			var origin = (urld.protocol != 'data') ? (urld.protocol || 'httpl')+'://'+urld.authority : null;
-			cliHistory.add(origin, cmd, lastRes);
+			// cliHistory.add(origin, cmd, lastRes); :NOTE: now done in pagent
 
 			// Fulfill response
 			lastRes.headers['CLI-Cmd'] = cmd;
@@ -215,7 +220,7 @@ server.route('/', function(link, method) {
 	});
 });
 
-/*server.route('/:id', function(link, method) {
+server.route('/:id', function(link, method) {
 	link({ href: 'httpl://hosts', rel: 'via', id: 'hosts', title: 'Page' });
 	link({ href: '/', rel: 'up service collection', id: 'cli', title: 'Command Line' });
 	link({ href: '/:id', rel: 'self item', id: ':id', title: 'Update :id' });
@@ -225,15 +230,15 @@ server.route('/', function(link, method) {
 	method('GET', forbidOthers, function(req, res) {
 		var from = req.header('From');
 
-		var update = get_update(req.params.id, from);
+		var update = cliHistory.get(req.params.id);
 		if (!update) throw 404;
 
 		if (from && update.from !== from && from != 'httpl://cli')
 			throw 403;
 
 		var accept = local.preferredType(req, ['text/html', 'application/json']);
-		if (accept == 'text/html')
-			return [200, html, {'content-type': 'text/html'}];
+		/*if (accept == 'text/html') :TODO:
+			return [200, html, {'content-type': 'text/html'}];*/
 		if (accept == 'application/json')
 			return [200, update, {'content-type': 'application/json'}];
 		throw 406;
@@ -242,20 +247,19 @@ server.route('/', function(link, method) {
 	method('DELETE', forbidOthers, function(req, res) {
 		var from = req.header('From');
 
-		var update = get_update(req.params.id, from);
+		var update = cliHistory.get(req.params.id);
 		if (!update) throw 404;
 
 		if (from && from != 'httpl://cli')
 			throw 403;
 
-		delete _updates[update.id];
-		_updates_ids.splice(_updates_ids.indexOf(update.id), 1);
+		cliHistory.set(update.id, null);
 
-		$('main iframe').contents().find('#cli-updates > #update-'+update.id).remove();
+		$('#cli-update-'+req.params.id).remove();
 
 		return 204;
 	});
-});*/
+});
 
 function forbidOthers(req, res) {
 	var from = req.header('From');
@@ -777,6 +781,7 @@ pagent.dispatchRequest({ url: 'httpl://help' });
 // Page Agent (PAgent)
 // ===================
 var util = require('./util.js');
+var cliHistory = require('./cli/history');
 
 function renderResponse(res) {
 	if (res.body !== '') {
@@ -793,10 +798,11 @@ function renderResponse(res) {
 	return res.status + ' ' + res.reason;
 }
 
+var iframeCounter = 0;
 function createIframe(origin, cmd) {
 	var time = (new Date()).toLocaleTimeString();
 	var html = [
-		'<table class="cli-update">',
+		'<table class="cli-update" id="cli-update-'+iframeCounter+'">',
 			'<tr>',
 				'<td>',
 					'<p><small class="text-muted">'+time+'</small></p>',
@@ -808,6 +814,7 @@ function createIframe(origin, cmd) {
 							'<input type="hidden" name="cmd">',
 							'<button type="submit" class="btn btn-default btn-xs">&crarr;</button>',
 							' <em class="text-muted">'+util.makeSafe(cmd)+'</em>',
+							' <a class="btn btn-default btn-xs" method="DELETE" href="httpl://cli/'+iframeCounter+'" target="_null">&times;</a>',
 						'</form></p>'
 					].join('')) : ''),
 					'<iframe seamless="seamless" sandbox="allow-popups allow-same-origin allow-scripts" data-origin="'+origin+'"><html><body></body></html></iframe>',
@@ -815,6 +822,7 @@ function createIframe(origin, cmd) {
 			'</tr>',
 		'</table>'
 	].join('');
+	iframeCounter++;
 	$('#cmd-out').prepend(html);
 	$('#cmd-out .cli-update').first().find('input[name=cmd]').val(util.makeSafe(cmd));
 	return $('#cmd-out iframe').first();
@@ -909,12 +917,19 @@ function dispatchRequest(req, origin) {
 		// New iframe
 		res_ = local.dispatch(req);
 		res_.always(function(res) {
+			var cmd;
 			var origin = (req.urld.protocol != 'data') ? (req.urld.protocol || 'httpl')+'://'+req.urld.authority : null;
 			if (origin == 'httpl://cli' && res.header('CLI-Origin')) {
-				origin = res.header('CLI-Origin');
+				// Proxied through the command-line
+				cmd = res.header('CLI-Cmd');
+				origin = res.header('CLI-Origin'); // use the downstream origin
+			} else {
+				// Not proxied through the CLI
+				cmd = util.reqToCmd(req); // generate the command equivalent
 			}
+			cliHistory.add(origin, cmd); // add to history
 
-			var newIframe = createIframe(origin, res.header('CLI-Cmd') || util.reqToCmd(req));
+			var newIframe = createIframe(origin, cmd, res);
 			renderIframe(newIframe, renderResponse(res));
 			return res;
 		});
@@ -935,7 +950,7 @@ module.exports = {
 	prepIframeRequest: prepIframeRequest,
 	dispatchRequest: dispatchRequest
 };
-},{"./util.js":8}],8:[function(require,module,exports){
+},{"./cli/history":2,"./util.js":8}],8:[function(require,module,exports){
 
 var lbracket_regex = /</g;
 var rbracket_regex = />/g;

@@ -16,6 +16,10 @@ function getAll(id) {
 	return _updates;
 }
 
+function set(id, v) {
+	_updates[id] = v;
+}
+
 function setCursor(cursor) {
 	_cursor = cursor;
 }
@@ -33,6 +37,7 @@ module.exports = {
 	add: add,
 	get: get,
 	getAll: getAll,
+	set: set,
 
 	setCursor: setCursor,
 	moveCursor: moveCursor

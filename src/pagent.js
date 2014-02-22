@@ -1,6 +1,7 @@
 // Page Agent (PAgent)
 // ===================
 var util = require('./util.js');
+var cliHistory = require('./cli/history');
 
 function renderResponse(res) {
 	if (res.body !== '') {
@@ -17,10 +18,11 @@ function renderResponse(res) {
 	return res.status + ' ' + res.reason;
 }
 
+var iframeCounter = 0;
 function createIframe(origin, cmd) {
 	var time = (new Date()).toLocaleTimeString();
 	var html = [
-		'<table class="cli-update">',
+		'<table class="cli-update" id="cli-update-'+iframeCounter+'">',
 			'<tr>',
 				'<td>',
 					'<p><small class="text-muted">'+time+'</small></p>',
@@ -32,6 +34,7 @@ function createIframe(origin, cmd) {
 							'<input type="hidden" name="cmd">',
 							'<button type="submit" class="btn btn-default btn-xs">&crarr;</button>',
 							' <em class="text-muted">'+util.makeSafe(cmd)+'</em>',
+							' <a class="btn btn-default btn-xs" method="DELETE" href="httpl://cli/'+iframeCounter+'" target="_null">&times;</a>',
 						'</form></p>'
 					].join('')) : ''),
 					'<iframe seamless="seamless" sandbox="allow-popups allow-same-origin allow-scripts" data-origin="'+origin+'"><html><body></body></html></iframe>',
@@ -39,6 +42,7 @@ function createIframe(origin, cmd) {
 			'</tr>',
 		'</table>'
 	].join('');
+	iframeCounter++;
 	$('#cmd-out').prepend(html);
 	$('#cmd-out .cli-update').first().find('input[name=cmd]').val(util.makeSafe(cmd));
 	return $('#cmd-out iframe').first();
@@ -133,12 +137,19 @@ function dispatchRequest(req, origin) {
 		// New iframe
 		res_ = local.dispatch(req);
 		res_.always(function(res) {
+			var cmd;
 			var origin = (req.urld.protocol != 'data') ? (req.urld.protocol || 'httpl')+'://'+req.urld.authority : null;
 			if (origin == 'httpl://cli' && res.header('CLI-Origin')) {
-				origin = res.header('CLI-Origin');
+				// Proxied through the command-line
+				cmd = res.header('CLI-Cmd');
+				origin = res.header('CLI-Origin'); // use the downstream origin
+			} else {
+				// Not proxied through the CLI
+				cmd = util.reqToCmd(req); // generate the command equivalent
 			}
+			cliHistory.add(origin, cmd); // add to history
 
-			var newIframe = createIframe(origin, res.header('CLI-Cmd') || util.reqToCmd(req));
+			var newIframe = createIframe(origin, cmd, res);
 			renderIframe(newIframe, renderResponse(res));
 			return res;
 		});

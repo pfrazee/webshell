@@ -60,7 +60,7 @@ server.route('/', function(link, method) {
 			// :TODO: needed?
 			var urld = local.parseUri(lastReq);
 			var origin = (urld.protocol != 'data') ? (urld.protocol || 'httpl')+'://'+urld.authority : null;
-			cliHistory.add(origin, cmd, lastRes);
+			// cliHistory.add(origin, cmd, lastRes); :NOTE: now done in pagent
 
 			// Fulfill response
 			lastRes.headers['CLI-Cmd'] = cmd;
@@ -73,7 +73,7 @@ server.route('/', function(link, method) {
 	});
 });
 
-/*server.route('/:id', function(link, method) {
+server.route('/:id', function(link, method) {
 	link({ href: 'httpl://hosts', rel: 'via', id: 'hosts', title: 'Page' });
 	link({ href: '/', rel: 'up service collection', id: 'cli', title: 'Command Line' });
 	link({ href: '/:id', rel: 'self item', id: ':id', title: 'Update :id' });
@@ -83,15 +83,15 @@ server.route('/', function(link, method) {
 	method('GET', forbidOthers, function(req, res) {
 		var from = req.header('From');
 
-		var update = get_update(req.params.id, from);
+		var update = cliHistory.get(req.params.id);
 		if (!update) throw 404;
 
 		if (from && update.from !== from && from != 'httpl://cli')
 			throw 403;
 
 		var accept = local.preferredType(req, ['text/html', 'application/json']);
-		if (accept == 'text/html')
-			return [200, html, {'content-type': 'text/html'}];
+		/*if (accept == 'text/html') :TODO:
+			return [200, html, {'content-type': 'text/html'}];*/
 		if (accept == 'application/json')
 			return [200, update, {'content-type': 'application/json'}];
 		throw 406;
@@ -100,20 +100,19 @@ server.route('/', function(link, method) {
 	method('DELETE', forbidOthers, function(req, res) {
 		var from = req.header('From');
 
-		var update = get_update(req.params.id, from);
+		var update = cliHistory.get(req.params.id);
 		if (!update) throw 404;
 
 		if (from && from != 'httpl://cli')
 			throw 403;
 
-		delete _updates[update.id];
-		_updates_ids.splice(_updates_ids.indexOf(update.id), 1);
+		cliHistory.set(update.id, null);
 
-		$('main iframe').contents().find('#cli-updates > #update-'+update.id).remove();
+		$('#cli-update-'+req.params.id).remove();
 
 		return 204;
 	});
-});*/
+});
 
 function forbidOthers(req, res) {
 	var from = req.header('From');
