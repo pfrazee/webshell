@@ -38,8 +38,9 @@ function reqToCmd(req) {
 
 	// Is the accept header expressable in the fat pipe?
 	var isAcceptFatpipeable = (req.headers.accept && req.headers.accept.indexOf(',') === -1);
+	var isDefaultAccept = (req.headers.accept == 'text/html, */*');
 	for (var k in req.headers) {
-		if ((isAcceptFatpipeable && k == 'accept') || k == 'host') continue;
+		if (((isAcceptFatpipeable || isDefaultAccept) && k == 'accept') || k == 'host') continue;
 		cmd += ' -'+k+'="'+escapeQuotes(req.headers[k])+'"';
 	}
 

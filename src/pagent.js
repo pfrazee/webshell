@@ -5,7 +5,11 @@ var util = require('./util.js');
 function renderResponse(res) {
 	if (res.body !== '') {
 		if (typeof res.body == 'string') {
-			return res.body;
+			if (res.header('Content-Type').indexOf('text/html') !== -1)
+				return res.body;
+			if (res.header('Content-Type').indexOf('javascript') !== -1)
+				return '<link href="css/prism.css" rel="stylesheet"><pre><code class="language-javascript">'+util.makeSafe(res.body)+'</code></pre>';
+			return '<pre>'+util.makeSafe(res.body)+'</pre>';
 		} else {
 			return '<link href="css/prism.css" rel="stylesheet"><pre><code class="language-javascript">'+util.makeSafe(JSON.stringify(res.body))+'</code></pre>';
 		}

@@ -547,7 +547,7 @@ function replaceEscapeCodes(str) {
 	});
 }
 },{}],5:[function(require,module,exports){
-
+var util = require('./util.js');
 
 var server = servware();
 module.exports = server;
@@ -558,11 +558,10 @@ server.route('/', function(link, method) {
 		return [200, [
 		'<html>',
 			'<body>',
-				'<h4>WebShell 0.1.0</h4>',
+				'<p>These buttons are commands which can be clicked or typed into the input at the top of the screen:</p>',
 				'<p class="text-muted"><a class="cmd-example" href="httpl://hosts">hosts&crarr;</a> list active hosts</p>',
 				'<p class="text-muted"><a class="cmd-example" href="httpl://help">help&crarr;</a> this screen</p>',
 				'<p class="text-muted"><a class="cmd-example" href="httpl://help/intro">help/intro&crarr;</a> learn how to use WebShell</p>',
-				'<p>These buttons are commands which can be clicked or typed into the input at the top of the screen.</p>',
 				// '<p><a href="https://github.com/pfraze/webshell" target="_blank">Fork or clone WebShell</a> and host with <a href="http://pages.github.com/" target="_blank">GitHub Pages</a>. You can execute setup requests in ./src/main.js. Use <code>make setup</code> to build.</p>',
 			'</body>',
 		'</html>'
@@ -570,25 +569,129 @@ server.route('/', function(link, method) {
 	});
 });
 
+function intro1(req, res) {
+	req.assert({ accept: 'text/html' });
+	return [200, [
+		'<p><strong>Welcome to WebShell</strong>. Everything here is powered by Web requests, and the responses are shown in a continuous history.</p>',
+		'<p>Fetch the next page:</p>',
+		'<p class="text-muted"><a class="cmd-example" href="httpl://help/intro/2">help/intro/2</a> see the next page</p>'
+	].join(''), {'Content-Type':'text/html'}];
+}
 
 server.route('/intro', function (link, method) {
-	method('GET', function (req, res) {
-		req.assert({ accept: 'text/html' });
+	method('GET', intro1);
+});
+server.route('/intro/1', function (link, method) {
+	method('GET', intro1);
+});
+
+/*
+req.assert({ accept: 'text/html' });
+	var hostUrld = local.parseUri(window.location.toString());
+
+	return local.GET('http://gwr.io/marked.js').always(function(res2) {
+		var src = (res2.body && typeof res2.body == 'string') ? res2.body : (res2.status + ' ' + res2.reason);
 		return [200, [
-		'<html><body style="max-width: 560px">',
-			'<p><h3 class="fadeInRight">Welcome</h3></p>',
+		'<html><head><link href="css/prism.css" rel="stylesheet"></head><body>',
+			'<p>Observe this javascript:</p>',
+			'<pre><code class="language-javascript">'+util.makeSafe(src)+'</code></pre>',
+			'<p>As you can see, it is a Web server.</p>',
+			'<p class="text-muted"><a class="cmd-example" href="httpl://gwr.io[marked.js]/help/intro/2">gwr.io[marked.js]/help/intro/2&crarr;</a> use it to generate the next page with markdown</p>',
 				// '<p>WebShell is an open-source project created by <a href="https://twitter.com/pfrazee" target="_blank">Paul Frazee</a> to interact with Web services. It is a command line for HTTP requests, to compose streams of information and to construct interfaces. Responses are shown directly in iframes.</p>',
 		'</body></html>'
 		].join(''), {'Content-Type': 'text/html'}];
 	});
+	*/
+/*server.route('/intro/2', function (link, method) {
+	method('GET', function (req, res) {
+		req.assert({ accept: 'text/plain' });
+		return [200, [
+			'Well done! This page is only available in Markdown, and so had to be converted. ([View Original](httpl://help/intro/2))',
+			'The commands you type at the top generate Web requests, just like links do. Try typing the next command in the input on the top.',
+			'`help/intro/3`'
+		].join('\n\n'), {'Content-Type':'text/plain'}];
+	});
+});*/
+
+server.route('/intro/2', function (link, method) {
+	method('GET', function (req, res) {
+		req.assert({ accept: 'text/html' });
+		return [200, [
+			'<p><strong>Well done!</strong> That was a link you clicked, but the response was added to the history instead of replacing the page.</p>',
+			'<p>You can type commands at the top to generate Web requests, just like links do. Try typing the next command in the input on the top:</p>',
+			'<p class="text-muted"><a class="cmd-example">help/intro/3</a> you\'ll have to type this one!</p>'
+		].join(''), {'Content-Type':'text/html'}];
+	});
 });
+
+server.route('/intro/3', function (link, method) {
+	method('GET', function (req, res) {
+		req.assert({ accept: 'text/html' });
+		return [200, [
+			'<p><strong>Alright!</strong> Typing commands isn\'t necessary for WebShell, but it does give you a lot of power.</p>',
+			'<p>As it so happens, what you just typed is a URL. If you type it out fully, it looks like this:</p>',
+			'<p class="text-muted"><a class="cmd-example" href="httpl://help/intro/4">httpl://help/intro/4</a> see the next page</p>'
+		].join(''), {'Content-Type':'text/html'}];
+	});
+});
+
+server.route('/intro/4', function (link, method) {
+	method('GET', function (req, res) {
+		req.assert({ accept: 'text/html' });
+		return [200, [
+			'<p><strong>That\'s it</strong>. Luckily, you don\'t have to type the <code>httpl://</code> part - that\'s the default protocol.</p>',
+			'<p>When you enter a command, you send a Web request. In this case, it\'s a GET request, which is another default. If included, the command becomes:</p>',
+			'<p class="text-muted"><a class="cmd-example" href="httpl://help/intro/5">GET help/intro/5</a> see the next page</p>'
+		].join(''), {'Content-Type':'text/html'}];
+	});
+});
+
+server.route('/intro/5', function (link, method) {
+	method('GET', function (req, res) {
+		req.assert({ accept: 'text/html' });
+		return [200, [
+			'<p><strong>Okay.</strong> Web requests all have "methods". A lot of services only use GET and POST, but there are others in common usage.</p>',
+			'<p>Servers in Webshell may use a variety of methods. The next page only supports <code>AWESOME-GET</code>:</p>',
+			'<p class="text-muted"><a class="cmd-example" method="AWESOME-GET" href="httpl://help/intro/6">AWESOME-GET help/intro/6</a> awesome-see the next page</p>'
+		].join(''), {'Content-Type':'text/html'}];
+	});
+});
+
+server.route('/intro/6', function (link, method) {
+	method('AWESOME-GET', function (req, res) {
+		req.assert({ accept: 'text/html' });
+		return [200, [
+			'<style>',
+			'h3 { margin-top: 0 }',
+			'.rainbow {',
+				'background-image: -webkit-gradient( linear, left top, right top, color-stop(0, #f22), color-stop(0.15, #f2f), color-stop(0.3, #22f), color-stop(0.45, #2ff), color-stop(0.6, #2f2),color-stop(0.75, #2f2), color-stop(0.9, #ff2), color-stop(1, #f22) );',
+				'background-image: gradient( linear, left top, right top, color-stop(0, #f22), color-stop(0.15, #f2f), color-stop(0.3, #22f), color-stop(0.45, #2ff), color-stop(0.6, #2f2),color-stop(0.75, #2f2), color-stop(0.9, #ff2), color-stop(1, #f22) );',
+				'color:transparent;',
+				'-webkit-background-clip: text;',
+				'background-clip: text;',
+			'}</style>',
+			'<h3><span class="rainbow">AWESOME</span></h3>',
+			'<p>You must be wondering what "httpl" is. That\'s a protocol that targets Javascript functions. These instructions have all been served by a script running on this page (<a href="httpl://host.com/src/help.js">View Source</a>).</p>',
+			'<p>This is the basis of WebShell\'s power.</p>',
+			'<p class="text-muted"><a class="cmd-example" href="httpl://help/intro/7">help/intro/7</a> see the next page</p>'
+		].join(''), {'Content-Type':'text/html'}];
+	});
+});
+
+/*
+			'<p>What is HTTPL? The L stands for "Local," and it\'s a way to send requests to servers that live in the user\'s browser - on the Page, or in Web Workers (other threads).</p>',
+			'<p><a href="https://grimwire.com/local" target="_blank"><img src="img/httplocal_20x20.png"><strong style="color:#333">HTTP<span class="text-danger">Local</span></strong><a></p>',
+			'<p class="text-muted"><a class="cmd-example" href="httpl://help/intro/5">help/intro/5</a> see the next page</p>'
+		].join(''), {'Content-Type':'text/html'}];
+	});
+});*/
 
 server.route('/workers', function(link, method) {
 	method('GET', function (req, res) {
 		req.assert({ accept: 'text/html' });
 		return [200, [
 		'<html>',
-			'<body style="max-width: 560px">',
+			'<body>',
 				'<h4>About Worker Services</h4>',
 				'<p>Multi-threaded "Worker" VMs are used to sandbox Web services on the user\'s computer.</p>',
 				// '<blockquote class="text-muted">',
@@ -600,7 +703,16 @@ server.route('/workers', function(link, method) {
 		].join(''), {'Content-Type': 'text/html'}];
 	});
 });
-},{}],6:[function(require,module,exports){
+
+/*
+
+  <ul class="list-inline">
+            <li><a href="https://grimwire.com/local" target="_blank"><img src="img/httplocal_20x20.png"><strong style="color:#333">HTTP<span class="text-danger">Local</span></strong><a></li>
+            <li><a href="https://github.com/pfraze/servware" target="_blank"><img src="img/servware_20x20.png"><strong class="text-success">Servware</strong></a></li>
+            <li><a href="http://getbootstrap.com/" target="_blank"><img src="img/bootstrap_20x20.png"><strong class="bootstrap-color">Bootstrap 3</strong></a></li>
+          </ul>
+          */
+},{"./util.js":8}],6:[function(require,module,exports){
 // Environment Setup
 // =================
 var pagent = require('./pagent.js');
@@ -632,6 +744,35 @@ local.addServer('cli', require('./cli'));
 local.addServer('help', require('./help.js'));
 
 pagent.dispatchRequest({ url: 'httpl://help' });
+
+
+// Server Definiton: httpl://host.com
+// ==================================
+// - aliases the host path to the local namespace, making it available to workers
+(function() {
+	var host = window.location.toString();
+	host = host.slice(0, host.lastIndexOf('/'));
+	var queryparams = local.contentTypes.deserialize('application/x-www-form-urlencoded', location.search.slice(1));
+	var cap = (queryparams) ? queryparams.cap : false;
+	local.addServer('host.com', function(req, res) {
+		var req2 = new local.Request({
+			method: req.method,
+			url: host+req.path,
+			query: local.util.deepClone(req.query),
+			headers: local.util.deepClone(req.headers),
+			stream: true
+		});
+		if (cap) { req2.query.cap = cap; }
+		local.dispatch(req2).always(function(res2) {
+			res.writeHead(res2.status, res2.reason, res2.headers);
+			res2.on('data', function(data) { res.write(data); });
+			res2.on('end', function() { res.end(); });
+			return res2;
+		});
+		req.on('data', function(chunk) { req2.write(chunk); });
+		req.on('end', function() { req2.end(); });
+	});
+})();
 },{"./cli":3,"./help.js":5,"./pagent.js":7,"./worker-bridge.js":9,"./worker-loader.js":10}],7:[function(require,module,exports){
 // Page Agent (PAgent)
 // ===================
@@ -640,7 +781,11 @@ var util = require('./util.js');
 function renderResponse(res) {
 	if (res.body !== '') {
 		if (typeof res.body == 'string') {
-			return res.body;
+			if (res.header('Content-Type').indexOf('text/html') !== -1)
+				return res.body;
+			if (res.header('Content-Type').indexOf('javascript') !== -1)
+				return '<link href="css/prism.css" rel="stylesheet"><pre><code class="language-javascript">'+util.makeSafe(res.body)+'</code></pre>';
+			return '<pre>'+util.makeSafe(res.body)+'</pre>';
 		} else {
 			return '<link href="css/prism.css" rel="stylesheet"><pre><code class="language-javascript">'+util.makeSafe(JSON.stringify(res.body))+'</code></pre>';
 		}
@@ -831,8 +976,9 @@ function reqToCmd(req) {
 
 	// Is the accept header expressable in the fat pipe?
 	var isAcceptFatpipeable = (req.headers.accept && req.headers.accept.indexOf(',') === -1);
+	var isDefaultAccept = (req.headers.accept == 'text/html, */*');
 	for (var k in req.headers) {
-		if ((isAcceptFatpipeable && k == 'accept') || k == 'host') continue;
+		if (((isAcceptFatpipeable || isDefaultAccept) && k == 'accept') || k == 'host') continue;
 		cmd += ' -'+k+'="'+escapeQuotes(req.headers[k])+'"';
 	}
 
@@ -959,21 +1105,43 @@ var whitelistAPIs_src = [ // nullifies all toplevel variables except those liste
 		'if (typeof console != "undefined") { console.log("Nullified: "+nulleds.join(", ")); }',
 	'})();\n'
 ].join('');
-/*var importScriptsPatch_src = [ // patches importScripts() to allow relative paths despite the use of blob uris
+var hostUrld = local.parseUri(window.location.toString());
+var host = hostUrld.protocol + '://' + hostUrld.authority;
+var hostDir = host + hostUrld.directory;
+var importScriptsPatch_src = [ // patches importScripts() to allow relative paths despite the use of blob uris
 	'(function() {',
 		'var orgImportScripts = importScripts;',
+		'function joinRelPath(base, relpath) {',
+			'if (relpath.charAt(0) == \'/\') {',
+				'return "'+host+'" + relpath;',
+			'}',
+			'// totally relative, oh god',
+			'// (thanks to geoff parker for this)',
+			'var hostpath = "'+hostUrld.path+'";',
+			'var hostpathParts = hostpath.split(\'/\');',
+			'var relpathParts = relpath.split(\'/\');',
+			'for (var i=0, ii=relpathParts.length; i < ii; i++) {',
+				'if (relpathParts[i] == \'.\')',
+					'continue; // noop',
+				'if (relpathParts[i] == \'..\')',
+					'hostpathParts.pop();',
+				'else',
+					'hostpathParts.push(relpathParts[i]);',
+			'}',
+			'return "'+host+'/" + hostpathParts.join(\'/\');',
+		'}',
 		'importScripts = function() {',
 			'return orgImportScripts.apply(null, Array.prototype.map.call(arguments, function(v, i) {',
-				'return (v.charAt(0) == \'/\') ? (\''+config.url+'\'+v) : v;',
+				'return (v.indexOf(\'/\') < v.indexOf(/[.:]/) || v.charAt(0) == \'/\' || v.charAt(0) == \'.\') ? joinRelPath(\''+hostDir+'\',v) : v;',
 			'}));',
 		'};',
 	'})();\n'
-].join('');*/
-var bootstrap_src = whitelistAPIs_src;// + importScriptsPatch_src;
+].join('\n');
+var bootstrap_src = whitelistAPIs_src + importScriptsPatch_src;
 
 function lookupWorker(req, res) {
 	if (req.urld.srcPath) {
-		var src_url = helpers.joinUri(req.urld.host, req.urld.srcPath);
+		var src_url = local.joinUri(req.urld.host, req.urld.srcPath);
 
 		// Return a server function which attempts to load the service first
 		return function() {
@@ -990,7 +1158,7 @@ function lookupWorker(req, res) {
 				})
 				.then(function(res2) {
 					// Create worker
-					var server = startWorker(res.body, req.urld.authority);
+					var server = startWorker(res2.body, req.urld.authority);
 					if (server) {
 						server.handleLocalRequest(req, res);
 					}
@@ -1008,7 +1176,7 @@ function startWorker(script_src, domain) {
 		var script_url = window.URL.createObjectURL(script_blob);
 
 		// Spawn server
-		return local.spawnWorkerServer(script_url, { domain: domain });
+		return local.spawnWorkerServer(script_url, { domain: domain, log: true });
 	} catch (e) { console.error(e); }
 	return null;
 }

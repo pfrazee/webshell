@@ -32,21 +32,43 @@ var whitelistAPIs_src = [ // nullifies all toplevel variables except those liste
 		'if (typeof console != "undefined") { console.log("Nullified: "+nulleds.join(", ")); }',
 	'})();\n'
 ].join('');
-/*var importScriptsPatch_src = [ // patches importScripts() to allow relative paths despite the use of blob uris
+var hostUrld = local.parseUri(window.location.toString());
+var host = hostUrld.protocol + '://' + hostUrld.authority;
+var hostDir = host + hostUrld.directory;
+var importScriptsPatch_src = [ // patches importScripts() to allow relative paths despite the use of blob uris
 	'(function() {',
 		'var orgImportScripts = importScripts;',
+		'function joinRelPath(base, relpath) {',
+			'if (relpath.charAt(0) == \'/\') {',
+				'return "'+host+'" + relpath;',
+			'}',
+			'// totally relative, oh god',
+			'// (thanks to geoff parker for this)',
+			'var hostpath = "'+hostUrld.path+'";',
+			'var hostpathParts = hostpath.split(\'/\');',
+			'var relpathParts = relpath.split(\'/\');',
+			'for (var i=0, ii=relpathParts.length; i < ii; i++) {',
+				'if (relpathParts[i] == \'.\')',
+					'continue; // noop',
+				'if (relpathParts[i] == \'..\')',
+					'hostpathParts.pop();',
+				'else',
+					'hostpathParts.push(relpathParts[i]);',
+			'}',
+			'return "'+host+'/" + hostpathParts.join(\'/\');',
+		'}',
 		'importScripts = function() {',
 			'return orgImportScripts.apply(null, Array.prototype.map.call(arguments, function(v, i) {',
-				'return (v.charAt(0) == \'/\') ? (\''+config.url+'\'+v) : v;',
+				'return (v.indexOf(\'/\') < v.indexOf(/[.:]/) || v.charAt(0) == \'/\' || v.charAt(0) == \'.\') ? joinRelPath(\''+hostDir+'\',v) : v;',
 			'}));',
 		'};',
 	'})();\n'
-].join('');*/
-var bootstrap_src = whitelistAPIs_src;// + importScriptsPatch_src;
+].join('\n');
+var bootstrap_src = whitelistAPIs_src + importScriptsPatch_src;
 
 function lookupWorker(req, res) {
 	if (req.urld.srcPath) {
-		var src_url = helpers.joinUri(req.urld.host, req.urld.srcPath);
+		var src_url = local.joinUri(req.urld.host, req.urld.srcPath);
 
 		// Return a server function which attempts to load the service first
 		return function() {
@@ -63,7 +85,7 @@ function lookupWorker(req, res) {
 				})
 				.then(function(res2) {
 					// Create worker
-					var server = startWorker(res.body, req.urld.authority);
+					var server = startWorker(res2.body, req.urld.authority);
 					if (server) {
 						server.handleLocalRequest(req, res);
 					}
@@ -81,7 +103,7 @@ function startWorker(script_src, domain) {
 		var script_url = window.URL.createObjectURL(script_blob);
 
 		// Spawn server
-		return local.spawnWorkerServer(script_url, { domain: domain });
+		return local.spawnWorkerServer(script_url, { domain: domain, log: true });
 	} catch (e) { console.error(e); }
 	return null;
 }
